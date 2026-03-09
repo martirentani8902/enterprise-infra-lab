@@ -1,0 +1,88 @@
+- name: Deploy Flask app
+  hosts:  app
+  become: true
+
+  vars:
+    app_repo_url: "git@github.com:martirentani8902/enterprise-app-lab.git"
+    app_repo_version: "main"
+    app_dir:  "/opt/flaskapp"
+    app_user: "flaskapp"
+    app_group:  "flaskapp"
+    venv_path:  "/opt/flaskapp-venv/.venv"
+    service_name: "flaskapp"
+
+  tasks:
+    - name: Asegurar paquetes necesarios
+      apt:
+          name:
+            - git
+            - python3-venv
+            - python3-pip
+          state:  present
+          update_cache: true
+
+    - name: Asegurar directorio de la app
+      file:
+        path: "{{ app_dir }}"
+        state:  directory
+        owner:  root
+        group:  root
+        mode: "0750"
+
+    - name: Clonar o actualizar repositorio de la app
+      git:
+        repo: "{{ app_repo_url  }}"
+        dest: "{{ app_dir }}"
+        version:  "{{ app_repo_version  }}"
+        update: true
+        force:  true
+
+    - name: Ajustar ownership del directorio de la app
+      file:
+       path: "{{ app_dir }}"
+       owner: "{{ app_user }}"
+       group: "{{ app_group }}"
+       recurse: true
+
+    - name: Asegurar  virtualenv
+      command:  python3 -m venv {{  venv_path }}
+      args:
+        creates:  "{{ venv_path }}/bin/activate"
+
+    - name: Instalar dependencias Python
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        virtualenv: "{{ venv_path }}"
+        virtualenv_python:  python3
+
+    - name: Ajustar ownership del virtualenv
+      file:
+        path: "{{ venv_path }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: true
+
+    - name: Reiniciar servicio Flask  app
+      systemd:
+        name: "{{ service_name  }}"
+        state:  restarted
+        enabled:  true
+        daemon_reload:  true
+
+    - name: Verificar health de la app
+      uri:
+        url: "http://127.0.0.1:5000/health"
+        method: GET
+        return_content: true
+        status_code: 200
+      register: flask_health
+      retries: 10
+      delay: 2
+      until:
+        - flask_health.status == 200
+        - flask_health.content is search("ok")
+
+    - name: Mostrar respuesta de health
+      debug:
+          var:  flask_health.content
+

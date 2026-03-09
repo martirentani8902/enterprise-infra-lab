@@ -14,6 +14,8 @@ all:
           ansible_host: 10.10.10.20
         app02.lab.local:
           ansible_host: 10.10.10.21
+        app03.lab.local:
+          ansible_host: 10.10.10.22
 
     db:
       hosts:

@@ -1,0 +1,99 @@
+---
+- name: Bootstrap Flask app servers
+  hosts: app
+  become: true
+
+  vars:
+    app_user: "flaskapp"
+    app_group: "flaskapp"
+    app_dir: "/opt/flaskapp"
+    app_config_dir: "/etc/flaskapp"
+    env_file_path: "/etc/flaskapp/flaskapp.env"
+    venv_path: "/opt/flaskapp-venv/.venv"
+    service_name: "flaskapp"
+    db_host: 10.10.10.30
+    db_name: appdb
+    db_user: appuser
+    db_pass: 1234
+
+  tasks:
+
+    - name: Instalar paquetes base
+      apt:
+        name:
+          - git
+          - python3-venv
+          - python3-pip
+        state: present
+        update_cache: true
+
+    - name: Crear grupo de la app
+      group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Crear usuario de la app
+      user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+        state: present
+
+    - name: Crear directorio de la app
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0750"
+
+    - name: Crear directorio de configuración
+      file:
+        path: "{{ app_config_dir }}"
+        state: directory
+        owner: root
+        group: "{{ app_group }}"
+        mode: "0750"
+
+    - name: Crear archivo de entorno
+      template:
+        src: ../templates/flaskapp.env.j2
+        dest: "{{ env_file_path }}"
+        owner: root
+        group: "{{ app_group }}"
+        mode: "0640"
+
+    - name: Crear archivo systemd del servicio
+      template:
+        src: ../templates/flaskapp.service.j2
+        dest: /etc/systemd/system/{{ service_name }}.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+
+    - name: Crear virtualenv si no existe
+      command: python3 -m venv {{ venv_path }}
+      args:
+        creates: "{{ venv_path }}/bin/activate"
+    - name: Ajustar permisos del virtualenv
+      file:
+       path: "{{ venv_path }}"
+       owner: "{{ app_user }}"
+       group: "{{ app_group }}"
+       recurse: true
+
+    - name: Habilitar puerto 5000 en UFW
+      community.general.ufw:
+        rule: allow
+        proto: tcp
+        src:  10.10.10.10
+        to_port:  5000
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: true
