@@ -1,0 +1,13 @@
+- name: Test de Ansible
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Instalar curl
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+
+

@@ -1,0 +1,11 @@
+---
+- name: Apagar servidores
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Apagar el sistema
+      ansible.builtin.command: shutdown -h now
+      async: 1
+      poll: 0

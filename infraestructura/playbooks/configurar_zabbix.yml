@@ -1,0 +1,29 @@
+- name: Configurar Zabbix agent
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Crear archivo PSK
+      copy:
+        content: "{{ zabbix_psk }}"
+        dest: /etc/zabbix/zabbix_agent2.psk
+        owner: zabbix
+        group: zabbix
+        mode: "0600"
+      notify: reiniciar zabbix-agent
+
+    - name: copiar configuracion ansible
+      template:
+        src: /home/ansible/infraestructura/templates/zabbix_agent2_ansible.conf.j2
+        dest: /etc/zabbix/zabbix_agent2.d/ansible.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: reiniciar zabbix-agent
+
+  handlers:
+    - name: reiniciar zabbix-agent
+      systemd:
+        name: zabbix-agent2
+        state: restarted

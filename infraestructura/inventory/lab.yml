@@ -1,0 +1,26 @@
+all:
+  vars:
+    ansible_user: ansible
+
+  children:
+    proxy:
+      hosts:
+        proxy.lab.local:
+          ansible_host: 10.10.10.10
+
+    app:
+      hosts:
+        app01.lab.local:
+          ansible_host: 10.10.10.20
+        app02.lab.local:
+          ansible_host: 10.10.10.21
+
+    db:
+      hosts:
+        db01.lab.local:
+          ansible_host: 10.10.10.30
+
+    monitoreo:
+      hosts:
+        monitoreo.lab.local:
+          ansible_host: 10.10.10.35

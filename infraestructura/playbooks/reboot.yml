@@ -1,0 +1,9 @@
+---
+- name: Reiniciar servidores
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Reiniciar el sistema
+      ansible.builtin.reboot:
+        reboot_timeout: 300
