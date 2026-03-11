@@ -18,14 +18,24 @@
 
   tasks:
 
+    - name: Habilitar conexion a apt-cache-ng
+      copy:
+        dest: "/etc/apt/apt.conf.d/01proxy"
+        content: |
+          Acquire::http::Proxy "http://10.10.10.10:3142"; 
+
     - name: Instalar paquetes base
       apt:
         name:
-          - git
           - python3-venv
           - python3-pip
         state: present
         update_cache: true
+
+    - name: Deshabilitar conexion a apt-cache-ng
+      file:
+        path: "/etc/apt/apt.conf.d/01proxy"
+        state:  absent
 
     - name: Crear grupo de la app
       group:
@@ -47,7 +57,15 @@
         state: directory
         owner: "{{ app_user }}"
         group: "{{ app_group }}"
-        mode: "0750"
+        mode: "0770"
+  
+    - name: Crear directorio de releases
+      file:
+          path: "{{ app_dir }}/releases"
+          state:  directory
+          owner:  "{{ app_user  }}"
+          group:  "{{ app_group }}"
+          mode: "0770"
 
     - name: Crear directorio de configuración
       file:
@@ -79,6 +97,7 @@
       command: python3 -m venv {{ venv_path }}
       args:
         creates: "{{ venv_path }}/bin/activate"
+
     - name: Ajustar permisos del virtualenv
       file:
        path: "{{ venv_path }}"

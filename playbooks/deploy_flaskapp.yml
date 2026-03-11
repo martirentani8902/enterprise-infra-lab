@@ -1,66 +1,83 @@
 - name: Deploy Flask app
   hosts:  app
+  gather_facts: true
   become: true
 
   vars:
+    app_repo_path: "/home/ansible/enterprise-app-lab"
     app_repo_url: "git@github.com:martirentani8902/enterprise-app-lab.git"
-    app_repo_version: "main"
+    app_repo_branch: "main"
     app_dir:  "/opt/flaskapp"
     app_user: "flaskapp"
     app_group:  "flaskapp"
     venv_path:  "/opt/flaskapp-venv/.venv"
     service_name: "flaskapp"
 
+
   tasks:
-    - name: Asegurar paquetes necesarios
-      apt:
-          name:
-            - git
-            - python3-venv
-            - python3-pip
-          state:  present
-          update_cache: true
 
-    - name: Asegurar directorio de la app
-      file:
-        path: "{{ app_dir }}"
-        state:  directory
-        owner:  root
-        group:  root
-        mode: "0750"
+    - name: Generar release_id único
+      set_fact:
+        release_id: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      delegate_to: localhost
+      run_once: true
 
-    - name: Clonar o actualizar repositorio de la app
+    - name: Actualizar repo de la app
       git:
         repo: "{{ app_repo_url  }}"
-        dest: "{{ app_dir }}"
-        version:  "{{ app_repo_version  }}"
-        update: true
-        force:  true
+        dest: "{{ app_repo_path }}"
+        version: "{{  app_repo_branch }}"
+        update: yes
+      delegate_to: localhost
+      run_once: true
+      become: false
 
-    - name: Ajustar ownership del directorio de la app
+    - name: Crear artefacto
+      archive:
+        path: "{{ app_repo_path }}/*"
+        dest: "/tmp/flaskapp.tar.gz" 
+        exclude_path: 
+          - "{{ app_repo_path }}/README.md"
+          - "{{ app_repo_path }}/.git"
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Copiar artefacto a servidores app
+      copy:
+        src: "/tmp/flaskapp.tar.gz"
+        dest: "/tmp/flaskapp.tar.gz"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0640"
+
+    - name: Asegurar directorio de release
       file:
-       path: "{{ app_dir }}"
-       owner: "{{ app_user }}"
-       group: "{{ app_group }}"
-       recurse: true
+        path: "{{ app_dir }}/releases/{{  release_id  }}"
+        state:  directory
+        owner:  "{{ app_user  }}"
+        group:  "{{ app_group }}"
+        mode: "0770"
 
-    - name: Asegurar  virtualenv
-      command:  python3 -m venv {{  venv_path }}
-      args:
-        creates:  "{{ venv_path }}/bin/activate"
+    - name: Extraer release
+      unarchive:
+        src: "/tmp/flaskapp.tar.gz"
+        dest: "{{ app_dir }}/releases/{{ release_id }}"
+        remote_src: true
 
     - name: Instalar dependencias Python
       pip:
-        requirements: "{{ app_dir }}/requirements.txt"
+        requirements: "{{ app_dir }}/releases/{{  release_id  }}/requirements.txt"
         virtualenv: "{{ venv_path }}"
         virtualenv_python:  python3
 
-    - name: Ajustar ownership del virtualenv
+    - name: Apuntar current a la nueva release
       file:
-        path: "{{ venv_path }}"
+        src: "{{ app_dir }}/releases/{{ release_id }}"
+        dest: "{{ app_dir }}/current"
+        state: link
         owner: "{{ app_user }}"
         group: "{{ app_group }}"
-        recurse: true
 
     - name: Reiniciar servicio Flask  app
       systemd:
