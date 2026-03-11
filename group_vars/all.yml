@@ -1,1 +1,4 @@
 zabbix_psk_identity: "PSK {{ inventory_hostname }}"
+app_repo_path: /home/ansible/enterprise-app-lab
+app_repo_url: git@github.com:martirentani8902/enterprise-app-lab.git
+app_repo_branch: main
