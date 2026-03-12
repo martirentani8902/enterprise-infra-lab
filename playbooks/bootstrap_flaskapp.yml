@@ -32,10 +32,12 @@
         state: present
         update_cache: true
 
-    - name: Deshabilitar conexion a apt-cache-ng
-      file:
-        path: "/etc/apt/apt.conf.d/01proxy"
-        state:  absent
+    - name: Habilitar salida a internet de pip
+      copy:
+        dest: "/etc/pip.conf"
+        content: |
+          [global]
+          proxy = http://10.10.10.10:3142
 
     - name: Crear grupo de la app
       group:

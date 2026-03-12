@@ -16,12 +16,6 @@
 
   tasks:
 
-    - name: Generar release_id único
-      set_fact:
-        release_id: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
-      delegate_to: localhost
-      run_once: true
-
     - name: Actualizar repo de la app
       git:
         repo: "{{ app_repo_url  }}"
@@ -32,13 +26,28 @@
       run_once: true
       become: false
 
+    - name: Obtener commit actual de la app
+      command: git rev-parse --short HEAD
+      args:
+        chdir: "{{ app_repo_path }}"
+      delegate_to: localhost
+      run_once: true
+      become: false
+      register: git_commit
+
+    - name: Definir release_id desde commit
+      set_fact:
+        release_id: "{{ git_commit.stdout }}"
+      run_once: true
+
     - name: Crear artefacto
       archive:
         path: "{{ app_repo_path }}/*"
         dest: "/tmp/flaskapp.tar.gz" 
         exclude_path: 
-          - "{{ app_repo_path }}/README.md"
+          - "{{ app_repo_path }}/README.md" 
           - "{{ app_repo_path }}/.git"
+          - "{{ app_repo_path }}/.env.example"
       delegate_to: localhost
       run_once: true
       become: false
