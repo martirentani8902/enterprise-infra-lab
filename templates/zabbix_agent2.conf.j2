@@ -1,0 +1,8 @@
+Server=zabbix.lab.local
+ServerActive=zabbix.lab.local
+Hostname={{ inventory_hostname }}
+
+TLSConnect=psk
+TLSAccept=psk
+TLSPSKIdentity={{ zabbix_psk_identity }}
+TLSPSKFile=/etc/zabbix/zabbix_agent2.psk
