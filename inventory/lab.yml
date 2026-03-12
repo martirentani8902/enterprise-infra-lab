@@ -3,10 +3,15 @@ all:
     ansible_user: ansible
 
   children:
-    proxy:
+    edge:
       hosts:
-        proxy.lab.local:
+        edge01.lab.local:
           ansible_host: 10.10.10.10
+
+    ci:
+      hosts:
+        ci01.lab.local:
+          ansible_host: 10.10.10.11
 
     app:
       hosts:
@@ -14,15 +19,8 @@ all:
           ansible_host: 10.10.10.20
         app02.lab.local:
           ansible_host: 10.10.10.21
-        app03.lab.local:
-          ansible_host: 10.10.10.22
 
-    db:
+    ops:
       hosts:
-        db01.lab.local:
+        ops01.lab.local:
           ansible_host: 10.10.10.30
-
-    monitoreo:
-      hosts:
-        monitoreo.lab.local:
-          ansible_host: 10.10.10.35
