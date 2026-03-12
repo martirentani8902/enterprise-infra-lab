@@ -8,6 +8,13 @@
     zabbix_release_local: "/tmp/zabbix-release_latest+debian13_all.deb"
 
   tasks:
+
+    - name: Habilitar conexion a apt-cache-ng
+      copy:
+        dest: "/etc/apt/apt.conf.d/01proxy"
+        content: |
+          Acquire::http::Proxy "http://10.10.10.10:3142";
+
     - name: Descargar paquete release de Zabbix
       get_url:
         url: "{{ zabbix_release_deb }}"
