@@ -15,7 +15,7 @@
 
     - name: copiar configuracion ansible
       template:
-        src: /home/ansible/infraestructura/templates/zabbix_agent2_ansible.conf.j2
+        src: /home/ansible/infraestructura/templates/zabbix_agent2.conf.j2
         dest: /etc/zabbix/zabbix_agent2.d/ansible.conf
         owner: root
         group: root
