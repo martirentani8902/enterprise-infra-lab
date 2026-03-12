@@ -1,0 +1,53 @@
+---
+- name: Rollback Flask app
+  hosts: app
+  become: true
+
+  vars:
+    app_dir: "/opt/flaskapp"
+    service_name: "flaskapp"
+
+  tasks:
+
+    - name: Verificar que rollback_id fue definido
+      fail:
+        msg: "Debes pasar rollback_id. Ejemplo: -e 'rollback_id=a1b2c3d'"
+      when: rollback_id is not defined or rollback_id | length == 0
+
+    - name: Verificar que exista la release a rollbackear
+      stat:
+        path: "{{ app_dir }}/releases/{{ rollback_id }}"
+      register: rollback_release
+
+    - name: Fallar si la release no existe
+      fail:
+        msg: "La release {{ rollback_id }} no existe en {{ app_dir }}/releases/"
+      when: not rollback_release.stat.exists or not rollback_release.stat.isdir
+
+    - name: Apuntar current a la release indicada
+      file:
+        src: "{{ app_dir }}/releases/{{ rollback_id }}"
+        dest: "{{ app_dir }}/current"
+        state: link
+
+    - name: Reiniciar servicio Flask app
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted
+
+    - name: Verificar health de la app
+      uri:
+        url: "http://127.0.0.1:5000/health"
+        method: GET
+        return_content: true
+        status_code: 200
+      register: flask_health
+      retries: 5
+      delay: 2
+      until:
+        - flask_health.status == 200
+        - flask_health.content is search("ok")
+
+    - name: Mostrar respuesta de health
+      debug:
+        var: flask_health.content
