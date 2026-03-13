@@ -1,5 +1,6 @@
 - name: Deploy Flask app
   hosts:  app
+  serial: 1
   gather_facts: true
   become: true
 
@@ -52,6 +53,19 @@
       run_once: true
       become: false
 
+    - name: Quitar servidor del upstream de nginx
+      replace:
+        path: /etc/nginx/sites-available/app.conf 
+        regexp: '(\s*server {{ inventory_hostname }}:5000)'
+        replace: '\1 down'
+      delegate_to: edge01.lab.local
+
+    - name: Recargar nginx
+      systemd:
+        name: nginx
+        state: reloaded
+      delegate_to: edge01.lab.local
+
     - name: Copiar artefacto a servidores app
       copy:
         src: "/tmp/flaskapp.tar.gz"
@@ -97,7 +111,7 @@
 
     - name: Verificar health de la app
       uri:
-        url: "http://127.0.0.1:5000/health"
+        url: "http://127.0.0.1:5000/health/ready"
         method: GET
         return_content: true
         status_code: 200
@@ -106,9 +120,21 @@
       delay: 2
       until:
         - flask_health.status == 200
-        - flask_health.content is search("ok")
+        - flask_health.content is search("ready")
 
     - name: Mostrar respuesta de health
       debug:
           var:  flask_health.content
 
+    - name: Volver a agregar servidor al upstream de nginx
+      replace:
+        path: /etc/nginx/sites-available/app.conf
+        regexp: '(\s*server {{ inventory_hostname }}:5000) down'
+        replace: '\1'
+      delegate_to: edge01.lab.local
+
+    - name: Recargar nginx
+      systemd:
+        name: nginx
+        state: reloaded
+      delegate_to: edge01.lab.local

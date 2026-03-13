@@ -37,7 +37,7 @@
 
     - name: Verificar health de la app
       uri:
-        url: "http://127.0.0.1:5000/health"
+        url: "http://127.0.0.1:5000/health/ready"
         method: GET
         return_content: true
         status_code: 200
@@ -46,7 +46,7 @@
       delay: 2
       until:
         - flask_health.status == 200
-        - flask_health.content is search("ok")
+        - flask_health.content is search("ready")
 
     - name: Mostrar respuesta de health
       debug:
