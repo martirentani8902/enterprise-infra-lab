@@ -14,6 +14,7 @@
         dest: "/etc/apt/apt.conf.d/01proxy"
         content: |
           Acquire::http::Proxy "http://10.10.10.10:3142";
+      tags: habilitar_repositorios
 
     - name: Descargar paquete release de Zabbix
       get_url:
