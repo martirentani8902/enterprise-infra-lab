@@ -6,7 +6,7 @@
 
     - name: Crear archivo PSK
       copy:
-        content: "{{ zabbix_psk }}"
+        content:  "{{  zabbix_psk  }}"
         dest: /etc/zabbix/zabbix_agent2.psk
         owner: zabbix
         group: zabbix
@@ -15,8 +15,8 @@
 
     - name: copiar configuracion ansible
       template:
-        src: /home/ansible/infraestructura/templates/zabbix_agent2.conf.j2
-        dest: /etc/zabbix/zabbix_agent2.d/ansible.conf
+        src: /home/ansible/enterprise-infra-lab/templates/zabbix_agent2.conf.j2
+        dest: /etc/zabbix/zabbix_agent2.d/zabbix_agent2.conf
         owner: root
         group: root
         mode: "0644"
