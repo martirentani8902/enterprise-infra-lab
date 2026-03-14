@@ -12,9 +12,6 @@
     venv_path: "/opt/flaskapp-venv/.venv"
     service_name: "flaskapp"
     db_host: 10.10.10.30
-    db_name: appdb
-    db_user: appuser
-    db_pass: 1234
 
   tasks:
 
